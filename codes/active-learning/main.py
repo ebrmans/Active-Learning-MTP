@@ -16,12 +16,12 @@ from cfg_parser import extract_cfgs_from_file, generate_vasp_inputs, run_vasp_fi
 def generate_lamnps_file(pot_file, outdir):
 
     md_properties_single = {
-        "latticeParameter": 4.95, # angstroms 
+        "latticeParameter": 2.831, # angstroms 
         "boxDimensions": [1, 1, 1],
         "potFile": pot_file,
         "temperature": 300, # K
-        "elements": ["Pb"],
-        "atomicWeights": [207.2],
+        "elements": ["Fe"],
+        "atomicWeights": [56.2],
         "pressure":1, # [bar] 
         "threshold_break":10,
         "threshold_save":0.1,
@@ -32,10 +32,10 @@ def generate_lamnps_file(pot_file, outdir):
 def lammps_phase(iter:int):
     # initial trained 
     if iter == 0:
-        almtp_file = "/home/yimeng/pb-dpmodel/mlip3_ym_test/mlip_pythontools/mlip_ym_all_train/mtp_18/pot.almtp"
+        almtp_file = "/global/home/hpc5626/mtp/Fe/L18/mtp"
     else:
         # load from the previous iteration!
-        almtp_file = f"/home/yimeng/pb-dpmodel/mlip3_ym_test/small_cell_training/test_iterative_training/iter/{iter-1}/updated_model/pot.almtp"
+        almtp_file = f"/global/home/hpc5626/mtp/Fe/L18/oldPot/{iter}"
 
     os.makedirs(f'iter/{iter}', exist_ok=True)
 
@@ -45,7 +45,7 @@ def lammps_phase(iter:int):
 
     # # # run lammps 
     print(f'Running LAMMPS', flush=True)
-    run_log = subprocess.run([f"mpirun -np 4 /home/yimeng/interface-lammps-mlip-3/lmp_mpi -in iter/{iter}/lammps.in"], shell=True, capture_output=True)
+    run_log = subprocess.run([f"mpirun -np 4 /global/home/hpc5626/MTP/interface-lammps-mlip-3/lmp_mpi -in iter/{iter}/lammps.in"], shell=True, capture_output=True)
     shutil.move('preselected.cfg', f'iter/{iter}/preselected.cfg')
 
     with open(f'iter/{iter}/lammps.log','w') as f:
@@ -100,8 +100,8 @@ def sample_query_error(iter:int, almtp_file:str, n_sample=200):
     # write this config to OUTCAR file 
     generate_vasp_inputs(selected_cfgs_file=f'iter/{iter}/sampled_preselected.cfg',
                          output_dir=f'iter/{iter}/vasp',
-                         incar_file='pb_vasp/INCAR',
-                         potcar_file='pb_vasp/POTCAR',
+                         incar_file='Fe_vasp/INCAR',
+                         potcar_file='Fe_vasp/POTCAR',
                          )
     
     # if everything goes correctly, run VASP! 
@@ -201,8 +201,8 @@ def run_new_batch_cfg_with_threshold(iter:int, almtp_file:str, threshold_save=2.
     # write this config to OUTCAR file 
     generate_vasp_inputs(selected_cfgs_file=f'iter/{iter}/threshold_preselected.cfg',
                          output_dir=f'iter/{iter}/vasp_threshold',
-                         incar_file='pb_vasp/INCAR',
-                         potcar_file='pb_vasp/POTCAR',
+                         incar_file='Fe_vasp/INCAR',
+                         potcar_file='Fe_vasp/POTCAR',
                          )
     
     # if everything goes correctly, run VASP! 
@@ -216,9 +216,9 @@ def run_new_batch_cfg_with_threshold(iter:int, almtp_file:str, threshold_save=2.
 def train_new_MLIP_model(iter:int,mpi=24):
 
     if iter == 0:
-        previous_cfg = ['/home/yimeng/pb-dpmodel/mlip3_ym_test/mlip_pythontools/mlip_ym_all_train/mtp_18/train.cfg']
+        previous_cfg = ['/global/home/hpc5626/mtp/Fe/L18/mtp/train.cfg']
     else:
-        previous_cfg = [f"/home/yimeng/pb-dpmodel/mlip3_ym_test/small_cell_training/test_iterative_training/iter/{iter-1}/updated_model/train.cfg"]
+        previous_cfg = [f"/global/home/hpc5626/mtp/Fe/L18/mtp//{iter}/train.cfg"]
 
     os.makedirs(f'iter/{iter}/updated_model', exist_ok=True)
 
@@ -257,7 +257,7 @@ def train_new_MLIP_model(iter:int,mpi=24):
     # begin training 
     print(f'Starting training: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}. Num of MPI: {mpi}', flush=True)
 
-    almtp_file = f'/home/yimeng/mlip-3-main/MTP_templates/18.almtp'
+    almtp_file = f'/global/home/hpc5626/MTP/mlip-3/MTP_templates/18.almtp'
     train_cfg_file = f'iter/{iter}/updated_model/train.cfg'
     um_dir = f'iter/{iter}/updated_model'
     output_log = subprocess.run([f"mpirun  -np {mpi} mlp train {almtp_file} {train_cfg_file} --save_to={um_dir}/pot.almtp --iteration_limit=100"], capture_output=True, text=True, shell=True)
