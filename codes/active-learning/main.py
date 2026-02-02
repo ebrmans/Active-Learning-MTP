@@ -21,7 +21,7 @@ def generate_lamnps_file(pot_file, outdir):
         "potFile": pot_file,
         "temperature": 300, # K
         "elements": ["Fe"],
-        "atomicWeights": [56.2],
+        "atomicWeights": [55.845],
         "pressure":1, # [bar] 
         "threshold_break":10,
         "threshold_save":0.1,
